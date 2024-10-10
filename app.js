@@ -6,6 +6,16 @@ const path = require("path");
 const methodOverride = require("method-override");
 const ejsMate = require("ejs-mate");
 const wrapAsync = require("./utils/wrapAsync.js");
+const ExpressError = require("./utils/ExpressError.js");
+const {listingSchema} = require("./schema.js");
+const {reviewSchema} = require("./schema.js");
+const Review = require("./models/review.js");
+
+
+//Express Routers
+const listings  = require("./routes/listing.js");
+const reviews  = require("./routes/review.js");
+
 
 app.set("view engine","ejs");
 app.set("views",path.join(__dirname,"views"));
@@ -28,61 +38,23 @@ app.get("/",(req,res)=>{
     res.send("I am Root");
 })
 
-//INDEX Route
-app.get("/listings",async (req,res)=>{
-    const allListings = await Listing.find();
-    res.render("listings/index.ejs",{allListings});
+//Express Router for listings
+app.use("/listings",listings);
+
+//Express Router for Reviews
+app.use("/listings/:id/reviews",reviews);
+
+app.all("*",(req,res,next)=>{
+    next(new ExpressError(404,"Page Not Found"));
 })
-
-//NEW Route
-app.get("/listings/new",(req,res)=>{
-    res.render("listings/new.ejs");
-})
-
-//SHOW
-app.get("/listings/:id",async (req,res)=>{
-    let {id} = req.params;
-    const listing = await Listing.findById(id);
-    res.render("listings/show.ejs",{listing});
-})
-
-
-//Create Route
-app.post("/listings",wrapAsync(
-    async (req,res,next)=>{
-
-        const newListing = new Listing(req.body.listing);
-        await newListing.save();
-        res.redirect("/listings");
-
-}))
-
-//Edit Route
-app.get("/listings/:id/edit",async (req,res)=>{
-    let {id} = req.params;
-    const listing = await Listing.findById(id);
-    res.render("listings/edit.ejs",{listing});
-})
-
-//Update Route
-app.put("/listings/:id",async (req,res)=>{
-    let {id} = req.params;
-    await Listing.findByIdAndUpdate(id,{...req.body.listing});
-    res.redirect(`/listings/${id}`);
-})
-
-app.delete("/listings/:id",async (req,res)=>{
-    let {id} = req.params;
-    let deletedListing = await Listing.findByIdAndDelete(id);
-    console.log(deletedListing);
-    res.redirect("/listings");
-})
-
-
 
 app.use((err,req,res,next)=>{
-    res.send("Something went wrong");
+    let {statusCode = 500,message="Something Went Wrong"} = err;
+    res.status(statusCode).render("error.ejs",{err});
+    // res.status(statusCode).send(message); 
 })
+
+
 app.listen(3000,()=>{
   console.log("Connection is perfect");
 })
