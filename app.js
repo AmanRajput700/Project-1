@@ -12,11 +12,16 @@ const {reviewSchema} = require("./schema.js");
 const Review = require("./models/review.js");
 const session = require("express-session");
 const flash = require("connect-flash");
+const passport = require("passport");
+const LocalStartegy = require("passport-local");
+const User = require("./models/user.js");
+
 
 
 //Express Routers
-const listings  = require("./routes/listing.js");
-const reviews  = require("./routes/review.js");
+const listingRouter  = require("./routes/listing.js");
+const reviewRouter  = require("./routes/review.js");
+const userRouter  = require("./routes/user.js");
 
 main()
 .then(()=>{
@@ -49,26 +54,39 @@ const sessionOptions ={
     },
 }
 
-app.get("/",(req,res)=>{
-    res.send("I am Root");
-}) 
+// app.get("/",(req,res)=>{
+//     res.send("I am Root");
+// }) 
 
 app.use(session(sessionOptions));
 app.use(flash());
 
+//Passport
+app.use(passport.initialize());
+app.use(passport.session());
+passport.use(new LocalStartegy(User.authenticate()));
+
+passport.serializeUser(User.serializeUser()); //storing data of user in session
+passport.deserializeUser(User.deserializeUser());//removing data of user from session
+
 app.use((req,res,next)=>{
     res.locals.success = req.flash("success");
     res.locals.error = req.flash("error");
-    console.log(res.locals.success);
+    res.locals.currUser = req.user;
     next();
 })
 
 
+
+
 //Express Router for listings
-app.use("/listings",listings);
+app.use("/listings",listingRouter);
 
 //Express Router for Reviews
-app.use("/listings/:id/reviews",reviews);
+app.use("/listings/:id/reviews",reviewRouter);
+
+//Express Router for User
+app.use("/",userRouter);
 
 app.all("*",(req,res,next)=>{
     next(new ExpressError(404,"Page Not Found"));
