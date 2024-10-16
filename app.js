@@ -1,3 +1,5 @@
+    require('dotenv').config();
+
 const express = require("express");
 const app = express();
 const mongoose = require("mongoose");
@@ -16,22 +18,25 @@ const passport = require("passport");
 const LocalStartegy = require("passport-local");
 const User = require("./models/user.js");
 
-
+// const dbUrl = process.env.;
 
 //Express Routers
 const listingRouter  = require("./routes/listing.js");
 const reviewRouter  = require("./routes/review.js");
 const userRouter  = require("./routes/user.js");
+const { log } = require('console');
 
 main()
 .then(()=>{
-    console.log("connection is succesful");
+    console.log("connection to DB is succesful");
 })
 .catch(err => console.log(err));
 
 async function main(){
     await mongoose.connect('mongodb://127.0.0.1:27017/wanderlust');
 }
+
+
 
 app.set("view engine","ejs");
 app.set("views",path.join(__dirname,"views"));
